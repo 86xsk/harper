@@ -11,7 +11,7 @@ use clap::Parser;
 use dirs::{config_dir, data_local_dir};
 use harper_comments::CommentParser;
 use harper_core::linting::{LintGroup, Linter};
-use harper_core::parsers::{Markdown, MarkdownOptions};
+use harper_core::parsers::{Markdown, MarkdownOptions, PlainEnglish};
 use harper_core::{
     remove_overlaps, CharStringExt, Dialect, Dictionary, Document, FstDictionary, MergedDictionary,
     MutableDictionary, TokenKind, TokenStringExt, WordId, WordMetadata,
@@ -360,6 +360,7 @@ fn load_file(
     let parser: Box<dyn harper_core::parsers::Parser> =
         match file.extension().map(|v| v.to_str().unwrap()) {
             Some("md") => Box::new(Markdown::default()),
+            Some("txt") => Box::new(PlainEnglish),
             Some("lhs") => Box::new(LiterateHaskellParser::new_markdown(
                 MarkdownOptions::default(),
             )),
