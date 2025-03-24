@@ -9,7 +9,7 @@ use ariadne::{Color, Label, Report, ReportKind, Source};
 use clap::Parser;
 use harper_comments::CommentParser;
 use harper_core::linting::{LintGroup, Linter};
-use harper_core::parsers::{Markdown, MarkdownOptions};
+use harper_core::parsers::{Markdown, MarkdownOptions, PlainEnglish};
 use harper_core::{
     remove_overlaps, CharStringExt, Dialect, Dictionary, Document, FstDictionary,
     MutableDictionary, TokenKind, TokenStringExt, WordId,
@@ -331,6 +331,7 @@ fn load_file(file: &Path, markdown_options: MarkdownOptions) -> anyhow::Result<(
     let parser: Box<dyn harper_core::parsers::Parser> =
         match file.extension().map(|v| v.to_str().unwrap()) {
             Some("md") => Box::new(Markdown::default()),
+            Some("txt") => Box::new(PlainEnglish),
             Some("lhs") => Box::new(LiterateHaskellParser::new_markdown(
                 MarkdownOptions::default(),
             )),
