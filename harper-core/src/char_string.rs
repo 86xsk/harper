@@ -19,11 +19,11 @@ impl CharStringExt for [char] {
             return Cow::Borrowed(self);
         }
 
-        let mut out = CharString::with_capacity(self.len());
+        let mut out = Vec::with_capacity(self.len());
 
         out.extend(self.iter().flat_map(|v| v.to_lowercase()));
 
-        Cow::Owned(out.to_vec())
+        Cow::Owned(out)
     }
 
     fn to_string(&self) -> String {
