@@ -136,4 +136,36 @@ mod tests {
     fn does_not_flag_with_nothing_1298() {
         assert_lint_count("This is nothing new.", PronounKnew::default(), 0);
     }
+
+    #[test]
+    fn does_not_flag_with_some_1381() {
+        assert_lint_count("To learn some new tricks.", PronounKnew::default(), 0);
+    }
+
+    #[test]
+    fn flags_she_new_danger() {
+        assert_lint_count("She new danger lurked nearby.", PronounKnew::default(), 1);
+    }
+
+    // I think both "new" and "knew" would be correct here, so this should probably not be marked
+    // as a mistake. This test ensures that.
+    // Dealing with "some" is tricky, seemingly because it can function as both a pronoun and
+    // a determiner.
+    #[test]
+    fn does_not_flag_with_some_new_tricks_were() {
+        assert_lint_count(
+            "Some new tricks were being developed.",
+            PronounKnew::default(),
+            0,
+        );
+    }
+
+    #[test]
+    fn flags_some_new_that() {
+        assert_suggestion_result(
+            "Though some new that was the case.",
+            PronounKnew::default(),
+            "Though some knew that was the case.",
+        );
+    }
 }
