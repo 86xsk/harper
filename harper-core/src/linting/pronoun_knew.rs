@@ -2,7 +2,7 @@ use crate::expr::Expr;
 use crate::expr::LongestMatchOf;
 use crate::expr::SequenceExpr;
 use crate::{
-    Token,
+    CharStringExt, Token,
     linting::{ExprLinter, Lint, LintKind, Suggestion},
     patterns::WordSet,
 };
@@ -30,12 +30,31 @@ impl Default for PronounKnew {
             !excluded.contains(&&*pronorm)
         };
 
-        let pronoun_then_new = SequenceExpr::default()
+        // "{pronoun} new {noun}" is a mistake in most cases, but allowing it here prevents us from
+        // incorrectly flagging text like "To learn some new tricks."
+        // "{pronoun} new {not-noun}"
+        let pronoun_new_notnoun = SequenceExpr::default()
             .then(pronoun_pattern)
             .then_whitespace()
-            .then_any_capitalization_of("new");
+            .then_any_capitalization_of("new")
+            .then_whitespace()
+            .then_anything_but_noun();
 
-        let pronoun_adverb_then_new = SequenceExpr::default()
+        // To catch mistakes like:
+        // "Though some new that was the case."
+        // "She new danger lurked nearby."
+        // "{pronoun} new {noun} {verb}"
+        let pronoun_new_noun_verb = SequenceExpr::default()
+            .then(pronoun_pattern)
+            .then_whitespace()
+            .then_any_capitalization_of("new")
+            .then_whitespace()
+            .then_noun()
+            .then_whitespace()
+            .then_verb();
+
+        // "{pronoun} {always|never|also|often} new"
+        let pronoun_adverb_new = SequenceExpr::default()
             .then(pronoun_pattern)
             .then_whitespace()
             .then(WordSet::new(&["always", "never", "also", "often"]))
@@ -43,8 +62,9 @@ impl Default for PronounKnew {
             .then_any_capitalization_of("new");
 
         let combined_pattern = LongestMatchOf::new(vec![
-            Box::new(pronoun_then_new),
-            Box::new(pronoun_adverb_then_new),
+            Box::new(pronoun_new_notnoun),
+            Box::new(pronoun_new_noun_verb),
+            Box::new(pronoun_adverb_new),
         ]);
 
         Self {
@@ -59,7 +79,11 @@ impl ExprLinter for PronounKnew {
     }
 
     fn match_to_lint(&self, tokens: &[Token], source: &[char]) -> Option<Lint> {
-        let typo_token = tokens.last()?;
+        // This feels hacky. It could potentially work incorrectly when there are multiple 'new's in
+        // the match.
+        let typo_token = tokens
+            .iter()
+            .find(|t| *t.span.get_content(source).to_lower() == ['n', 'e', 'w'])?;
         let typo_span = typo_token.span;
         let typo_text = typo_span.get_content(source);
 
